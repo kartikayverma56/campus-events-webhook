@@ -1,6 +1,6 @@
 const admin = require("firebase-admin");
 
-// Initialize Firebase Admin with service account from ENV (only once)
+// Initialize Firebase Admin with service account from env only once
 if (!admin.apps.length) {
   const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT;
 
@@ -31,32 +31,41 @@ export default async function handler(req, res) {
 
     try {
       if (intent === "UpcomingEventsByDomain") {
-        // 🪄 Safely extract domain
-        const domain = Array.isArray(params.domain) ? params.domain[0] : params.domain;
-        console.log("📌 Domain received from Dialogflow:", domain);
+        // ✅ Get domain value (string or array)
+        const domain =
+          Array.isArray(params.domain) && params.domain.length > 0
+            ? params.domain[0]
+            : params.domain;
+
+        if (!domain) {
+          throw new Error("No domain provided in parameters");
+        }
+
+        console.log(`🔍 Fetching events for domain: ${domain}`);
 
         const snapshot = await db
           .collection("events")
           .where("domain", "==", domain)
-          .orderBy("Date")
+          .orderBy("date")
           .get();
-
-        console.log("📌 Events found:", snapshot.size);
 
         if (!snapshot.empty) {
           reply = `Here are upcoming ${domain} events:\n`;
           snapshot.forEach((doc) => {
             const e = doc.data();
 
-            // 🗓 Handle Firestore Timestamp safely
-            let eventDate = "Unknown Date";
-            if (e.Date?.toDate) {
-              eventDate = e.Date.toDate().toDateString();
-            } else if (typeof e.Date === "string") {
-              eventDate = e.Date;
+            // 🗓️ Format the Firestore Timestamp to string
+            let eventDate = "unknown date";
+            if (e.date && typeof e.date.toDate === "function") {
+              const d = e.date.toDate();
+              eventDate = d.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              });
             }
 
-            reply += `• ${e.name} (${eventDate}): ${e.desc}\n`;
+            reply += `${e.name} (${eventDate}): ${e.desc}\n`;
           });
         }
       }
