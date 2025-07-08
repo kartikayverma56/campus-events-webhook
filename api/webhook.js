@@ -33,7 +33,7 @@ export default async function handler(req, res) {
         const domain = params.domain;
         const snapshot = await db.collection("events")
           .where("domain", "==", domain)
-          .orderBy("date").get();
+          .orderBy("Date").get();
 
         if (!snapshot.empty) {
           reply = `Here are upcoming ${domain} events:\n`;
