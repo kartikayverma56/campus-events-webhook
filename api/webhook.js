@@ -1,6 +1,6 @@
 const admin = require("firebase-admin");
 
-// Initialize Firebase Admin once
+// ✅ Initialize Firebase Admin with service account
 if (!admin.apps.length) {
   const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT;
 
@@ -27,24 +27,36 @@ export default async function handler(req, res) {
     const intent = req.body?.queryResult?.intent?.displayName;
     const params = req.body?.queryResult?.parameters || {};
 
+    console.log("👉 Full request body:", JSON.stringify(req.body, null, 2));
+    console.log("👉 Detected intent:", intent);
+    console.log("👉 Parameters:", params);
+
     let reply = "Sorry, I couldn’t find any events.";
 
     try {
       if (intent === "UpcomingEventsByDomain") {
-        const domain = params.domain;
+        // Make sure we extract the domain properly
+        const domain = Array.isArray(params.domain)
+          ? params.domain[0]
+          : params.domain;
+
+        console.log("👉 Domain to query:", domain);
 
         const snapshot = await db
           .collection("events")
           .where("domain", "==", domain)
-          .orderBy("inhowmanydays", "asc")  // optional for sorting
           .get();
+
+        console.log("👉 Query result size:", snapshot.size);
 
         if (!snapshot.empty) {
           reply = `Here are upcoming ${domain} events:\n`;
           snapshot.forEach((doc) => {
             const e = doc.data();
-            reply += `• ${e.name} (in ${e.inhowmanydays} days): ${e.desc}\n`;
+            reply += `• ${e.name}: ${e.desc}\n`;
           });
+        } else {
+          reply = `No upcoming events found for ${domain}.`;
         }
       }
 
