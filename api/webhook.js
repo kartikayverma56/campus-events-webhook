@@ -1,17 +1,25 @@
 const admin = require("firebase-admin");
 
 if (!admin.apps.length) {
+  const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT;
+
+  if (!serviceAccountBase64) {
+    throw new Error("FIREBASE_SERVICE_ACCOUNT env variable is not set.");
+  }
+
+  const serviceAccountJSON = Buffer.from(serviceAccountBase64, "base64").toString("utf8");
+  const serviceAccount = JSON.parse(serviceAccountJSON);
+
   admin.initializeApp({
-    credential: admin.applicationDefault(),
-    // Or use a service account:
-    // credential: admin.credential.cert(require("../serviceAccountKey.json"))..;;
+    credential: admin.credential.cert(serviceAccount),
   });
 }
+
 const db = admin.firestore();
 
 export default async function handler(req, res) {
   if (req.method === "GET") {
-    return res.status(200).send("✅ Campus Events Webhook is running!");
+    return res.status(200).send("✅ Campus Events Webhook is running securely with ENV!");
   }
 
   if (req.method === "POST") {
@@ -29,7 +37,7 @@ export default async function handler(req, res) {
 
         if (!snapshot.empty) {
           reply = `Here are upcoming ${domain} events:\n`;
-          snapshot.forEach(doc => {
+          snapshot.forEach((doc) => {
             const e = doc.data();
             reply += `${e.name} (${e.date.toDate().toDateString()}): ${e.desc}\n`;
           });
