@@ -1,11 +1,6 @@
 {
   "name": "campus-events-webhook",
   "version": "1.0.0",
-  "scripts": {
-    "dev": "vercel dev",
-    "build": "vercel build",
-    "start": "vercel start"
-  },
   "dependencies": {
     "firebase-admin": "^13.4.0"
   }
