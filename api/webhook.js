@@ -1,6 +1,6 @@
 const admin = require("firebase-admin");
 
-// Initialize Firebase Admin with service account from env only once
+// Initialize Firebase Admin with service account from ENV (only once)
 if (!admin.apps.length) {
   const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT;
 
@@ -31,8 +31,9 @@ export default async function handler(req, res) {
 
     try {
       if (intent === "UpcomingEventsByDomain") {
-        // FIX: Handle domain array or string
+        // 🪄 Safely extract domain
         const domain = Array.isArray(params.domain) ? params.domain[0] : params.domain;
+        console.log("📌 Domain received from Dialogflow:", domain);
 
         const snapshot = await db
           .collection("events")
@@ -40,13 +41,22 @@ export default async function handler(req, res) {
           .orderBy("Date")
           .get();
 
+        console.log("📌 Events found:", snapshot.size);
+
         if (!snapshot.empty) {
           reply = `Here are upcoming ${domain} events:\n`;
           snapshot.forEach((doc) => {
             const e = doc.data();
-            // If 'Date' is a Firestore Timestamp, convert
-            const eventDate = e.Date?.toDate?.().toDateString?.() || e.Date;
-            reply += `${e.name} (${eventDate}): ${e.desc}\n`;
+
+            // 🗓 Handle Firestore Timestamp safely
+            let eventDate = "Unknown Date";
+            if (e.Date?.toDate) {
+              eventDate = e.Date.toDate().toDateString();
+            } else if (typeof e.Date === "string") {
+              eventDate = e.Date;
+            }
+
+            reply += `• ${e.name} (${eventDate}): ${e.desc}\n`;
           });
         }
       }
