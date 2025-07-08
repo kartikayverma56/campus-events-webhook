@@ -31,7 +31,6 @@ export default async function handler(req, res) {
 
     try {
       if (intent === "UpcomingEventsByDomain") {
-        // ✅ Get domain value (string or array)
         const domain =
           Array.isArray(params.domain) && params.domain.length > 0
             ? params.domain[0]
@@ -46,7 +45,7 @@ export default async function handler(req, res) {
         const snapshot = await db
           .collection("events")
           .where("domain", "==", domain)
-          .orderBy("date")
+          .orderBy("inhowmanydays")
           .get();
 
         if (!snapshot.empty) {
@@ -54,11 +53,12 @@ export default async function handler(req, res) {
           snapshot.forEach((doc) => {
             const e = doc.data();
 
-            // 🗓️ Format the Firestore Timestamp to string
+            // 🗓️ Calculate date from today + inhowmanydays
             let eventDate = "unknown date";
-            if (e.date && typeof e.date.toDate === "function") {
-              const d = e.date.toDate();
-              eventDate = d.toLocaleDateString("en-GB", {
+            if (typeof e.inhowmanydays === "number") {
+              const today = new Date();
+              today.setDate(today.getDate() + e.inhowmanydays);
+              eventDate = today.toLocaleDateString("en-GB", {
                 day: "2-digit",
                 month: "long",
                 year: "numeric",
