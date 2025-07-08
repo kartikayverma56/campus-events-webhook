@@ -4,7 +4,7 @@ if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.applicationDefault(),
     // Or use a service account:
-    // credential: admin.credential.cert(require("../serviceAccountKey.json"))
+    // credential: admin.credential.cert(require("../serviceAccountKey.json"))..;;
   });
 }
 const db = admin.firestore();
